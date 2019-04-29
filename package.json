@@ -1,10 +1,10 @@
 {
-  "name": "identity-erc",
-  "version": "1.0.0",
-  "description": "Identity Aggregation Protocol for Ethereum",
+  "name": "metaresolvers",
+  "version": "0.1.0",
+  "description": "ERC1484 Resolvers",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/hydrogen-dev/identity-erc.git"
+    "url": "git+https://github.com/METADIUM/MetaResolvers.git"
   },
   "scripts": {
     "build": "npm run buidl",
@@ -21,20 +21,9 @@
     "solidity",
     "identity"
   ],
-  "author": "Noah Zinsmeister",
-  "contributors": [
-    {
-      "name": "Anurag Angara"
-    },
-    {
-      "name": "Andy Chorlian"
-    },
-    {
-      "name": "Shane Hampton"
-    }
-  ],
   "license": "GPL-3.0-or-later",
   "dependencies": {
+    "eth-gas-reporter": "^0.1.12",
     "ethereumjs-util": "^6.0.0",
     "ganache-cli": "^6.2.3",
     "truffle": "^5.0.0"

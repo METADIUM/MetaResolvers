@@ -15,6 +15,13 @@ module.exports = {
       websockets: true
     }
   },
+  mocha: {
+    reporter: 'eth-gas-reporter',
+    reporterOptions: {
+      currency: 'USD',
+      gasPrice: 18
+    },
+  },
   compilers: {
     solc: {
       version: '0.5.0',
