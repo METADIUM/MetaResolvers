@@ -9,10 +9,10 @@
   "scripts": {
     "build": "npm run buidl",
     "buidl": "rm -rf build/ && truffle compile",
-    "chain": "ganache-cli --port 8545 --seed metadium",
+    "chain": "ganache-cli --port 8545 --seed hydro",
     "test": "truffle test --network development",
     "cover": "rm -f scTopics && rm -f coverage.json && rm -rf coverage && solidity-coverage",
-    "chain-cover": "testrpc-sc --port 8555 -l 0xfffffffffff -g 0x01 --allowUnlimitedContractSize --seed metadium",
+    "chain-cover": "testrpc-sc --port 8555 -l 0xfffffffffff -g 0x01 --allowUnlimitedContractSize --seed hydro",
     "test-cover": "truffle test --network coverage"
   },
   "keywords": [
@@ -23,6 +23,7 @@
   ],
   "license": "GPL-3.0-or-later",
   "dependencies": {
+    "eth-gas-reporter": "^0.1.12",
     "ethereumjs-util": "^6.0.0",
     "ganache-cli": "^6.2.3",
     "truffle": "^5.0.0"
