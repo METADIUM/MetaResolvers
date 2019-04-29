@@ -1,18 +1,18 @@
 {
-  "name": "identity-erc",
-  "version": "1.0.0",
-  "description": "Identity Aggregation Protocol for Ethereum",
+  "name": "metaresolvers",
+  "version": "0.1.0",
+  "description": "ERC1484 Resolvers",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/hydrogen-dev/identity-erc.git"
+    "url": "git+https://github.com/METADIUM/MetaResolvers.git"
   },
   "scripts": {
     "build": "npm run buidl",
     "buidl": "rm -rf build/ && truffle compile",
-    "chain": "ganache-cli --port 8545 --seed hydro",
+    "chain": "ganache-cli --port 8545 --seed metadium",
     "test": "truffle test --network development",
     "cover": "rm -f scTopics && rm -f coverage.json && rm -rf coverage && solidity-coverage",
-    "chain-cover": "testrpc-sc --port 8555 -l 0xfffffffffff -g 0x01 --allowUnlimitedContractSize --seed hydro",
+    "chain-cover": "testrpc-sc --port 8555 -l 0xfffffffffff -g 0x01 --allowUnlimitedContractSize --seed metadium",
     "test-cover": "truffle test --network coverage"
   },
   "keywords": [
@@ -20,18 +20,6 @@
     "ethereum",
     "solidity",
     "identity"
-  ],
-  "author": "Noah Zinsmeister",
-  "contributors": [
-    {
-      "name": "Anurag Angara"
-    },
-    {
-      "name": "Andy Chorlian"
-    },
-    {
-      "name": "Shane Hampton"
-    }
   ],
   "license": "GPL-3.0-or-later",
   "dependencies": {
