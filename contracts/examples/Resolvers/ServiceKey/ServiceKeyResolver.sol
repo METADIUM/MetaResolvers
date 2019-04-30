@@ -8,21 +8,36 @@ contract ServiceKeyResolver {
     mapping(address => uint) internal keyToEin;
     mapping(address => string) internal keyToSymbol;
 
+    event KeyAdded(address indexed key, uint indexed ein, string symbol);
+    event KeyRemoved(address indexed key, uint indexed ein);
+
     constructor (address identityRegistryAddress) public {
         identityRegistry = IdentityRegistryInterface(identityRegistryAddress);
     }
 
-    modifier isResolverFor(uint ein, address addr) {
-        require(identityRegistry.isResolverFor(ein, addr), "The calling identity does not have this resolver set.");
+    modifier isResolverFor(uint ein) {
+        require(identityRegistry.isResolverFor(ein, address(this)), "The calling identity does not have this resolver set.");
         _;
     }
 
     function addKey(address key, string memory symbol)
         public
-        isResolverFor(identityRegistry.getEIN(msg.sender), address(this))
+        isResolverFor(identityRegistry.getEIN(msg.sender))
     {
-        keyToEin[key] = identityRegistry.getEIN(msg.sender);
+        uint ein = identityRegistry.getEIN(msg.sender);
+        keyToEin[key] = ein;
         keyToSymbol[key] = symbol;
+
+        emit KeyAdded(key, ein, symbol);
+    }
+
+    function removeKey(address key)
+        public
+        isResolverFor(identityRegistry.getEIN(msg.sender))
+    {
+        keyToEin[key] = 0;
+
+        emit KeyRemoved(key, identityRegistry.getEIN(msg.sender));
     }
 
     function isKeyFor(address key, uint ein) public view returns(bool) {
