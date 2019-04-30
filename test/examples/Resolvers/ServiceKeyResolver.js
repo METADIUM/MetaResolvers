@@ -56,14 +56,14 @@ contract('Testing Service Key Resolver', function (accounts) {
 
   describe('Testing Resolver', function () {
     it('resolver cannot be used when not set', async function () {
-      await instances.Resolver.check({ from: identity.associatedAddresses[0].address })
-        .then(() => assert.fail('key was added', 'transaction should fail'))
+      await instances.Resolver.addKey(services[0].address, { from: identity.associatedAddresses[0].address })
+        .then(() => assert.fail('service key was added', 'transaction should fail'))
         .catch(error => assert.include(
-          error.message, 'Check.', 'wrong rejection reason'
+          error.message, 'The calling identity does not have this resolver set.', 'wrong rejection reason'
         ))
     })
 
-    it('once added, email address can be set and read', async function () {
+    it('once added, service key can be set and read', async function () {
       await instances.IdentityRegistry.addResolvers(
         identity.resolvers,
         { from: identity.associatedAddresses[0].address }
@@ -72,11 +72,14 @@ contract('Testing Service Key Resolver', function (accounts) {
       const isResolverFor = await instances.IdentityRegistry.isResolverFor(identity.identity, instances.Resolver.address)
       assert.isTrue(isResolverFor, 'associated resolver was set incorrectly.')
 
-      await instances.Resolver.check({ from: identity.associatedAddresses[0].address })
+      await instances.Resolver.addKey(services[0].address, { from: identity.associatedAddresses[0].address })
+
+      const isKeyFor = await instances.Resolver.isKeyFor(services[0].address, identity.identity)
+      assert.isTrue(isKeyFor, 'service key was set incorrectly.')
     })
 
-    it('cannot access email addresses for non-existent EINs', async function () {
-      await instances.Resolver.getEmail(100)
+    it('cannot access service key for non-existent EINs', async function () {
+      await instances.Resolver.isKeyFor(services[0].address, 100)
         .then(() => assert.fail('key was read', 'transaction should fail'))
         .catch(error => {
           if (error.message !== defaultErrorMessage) {

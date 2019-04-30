@@ -3,31 +3,29 @@ pragma solidity ^0.5.0;
 import "../../../interfaces/IdentityRegistryInterface.sol";
 
 contract ServiceKeyResolver {
-    mapping(uint => string) internal emails;
-
     IdentityRegistryInterface identityRegistry;
+
+    mapping(address => uint) internal keyToEin;
+    mapping(address => string) internal keyToID;
 
     constructor (address identityRegistryAddress) public {
         identityRegistry = IdentityRegistryInterface(identityRegistryAddress);
     }
 
-    function check() public {
-        uint ein = identityRegistry.getEIN(msg.sender);
-        require(
-            identityRegistry.isResolverFor(ein, address(this)), "Check."
-        );
+    modifier isResolverFor(uint ein, address addr) {
+        require(identityRegistry.isResolverFor(ein, addr), "The calling identity does not have this resolver set.");
+        _;
     }
 
-    function setEmailAddress(string memory email) public {
-        uint ein = identityRegistry.getEIN(msg.sender);
-        require(
-            identityRegistry.isResolverFor(ein, address(this)), "The calling identity does not have this resolver set."
-        );
-        emails[ein] = email;
+    function addKey(address key)
+        public
+        isResolverFor(identityRegistry.getEIN(msg.sender), address(this))
+    {
+        keyToEin[key] = identityRegistry.getEIN(msg.sender);
     }
 
-    function getEmail(uint ein) public view returns(string memory) {
+    function isKeyFor(address key, uint ein) public view returns(bool) {
         require(identityRegistry.identityExists(ein), "The referenced identity does not exist.");
-        return emails[ein];
+        return keyToEin[key] == ein;
     }
 }
