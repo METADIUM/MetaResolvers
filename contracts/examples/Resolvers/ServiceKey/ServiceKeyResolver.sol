@@ -6,7 +6,7 @@ contract ServiceKeyResolver {
     IdentityRegistryInterface identityRegistry;
 
     mapping(address => uint) internal keyToEin;
-    mapping(address => string) internal keyToID;
+    mapping(address => string) internal keyToSymbol;
 
     constructor (address identityRegistryAddress) public {
         identityRegistry = IdentityRegistryInterface(identityRegistryAddress);
@@ -17,15 +17,20 @@ contract ServiceKeyResolver {
         _;
     }
 
-    function addKey(address key)
+    function addKey(address key, string memory symbol)
         public
         isResolverFor(identityRegistry.getEIN(msg.sender), address(this))
     {
         keyToEin[key] = identityRegistry.getEIN(msg.sender);
+        keyToSymbol[key] = symbol;
     }
 
     function isKeyFor(address key, uint ein) public view returns(bool) {
         require(identityRegistry.identityExists(ein), "The referenced identity does not exist.");
         return keyToEin[key] == ein;
+    }
+
+    function getSymbol(address key) public view returns(string memory) {
+        return keyToSymbol[key];
     }
 }

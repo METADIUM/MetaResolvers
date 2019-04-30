@@ -25,7 +25,10 @@ contract('Testing Service Key Resolver', function (accounts) {
     providers: []
   }
 
-  services = accountsPrivate.slice(4, 5)
+  services = {
+    p: accountsPrivate.slice(4, 5),
+    names: ['sp1', 'sp2']
+  }
 
   describe('Deploying Contracts', function () {
     it('IdentityRegistry contract deployed', async function () {
@@ -56,7 +59,7 @@ contract('Testing Service Key Resolver', function (accounts) {
 
   describe('Testing Resolver', function () {
     it('resolver cannot be used when not set', async function () {
-      await instances.Resolver.addKey(services[0].address, { from: identity.associatedAddresses[0].address })
+      await instances.Resolver.addKey(services.p[0].address, 'sp1', { from: identity.associatedAddresses[0].address })
         .then(() => assert.fail('service key was added', 'transaction should fail'))
         .catch(error => assert.include(
           error.message, 'The calling identity does not have this resolver set.', 'wrong rejection reason'
@@ -72,14 +75,17 @@ contract('Testing Service Key Resolver', function (accounts) {
       const isResolverFor = await instances.IdentityRegistry.isResolverFor(identity.identity, instances.Resolver.address)
       assert.isTrue(isResolverFor, 'associated resolver was set incorrectly.')
 
-      await instances.Resolver.addKey(services[0].address, { from: identity.associatedAddresses[0].address })
+      await instances.Resolver.addKey(services.p[0].address, services.names[0], { from: identity.associatedAddresses[0].address })
 
-      const isKeyFor = await instances.Resolver.isKeyFor(services[0].address, identity.identity)
+      const isKeyFor = await instances.Resolver.isKeyFor(services.p[0].address, identity.identity)
       assert.isTrue(isKeyFor, 'service key was set incorrectly.')
+
+      const symbol = await instances.Resolver.getSymbol(services.p[0].address)
+      assert.equal(symbol, services.names[0], 'service symbol was set incorrectly.')
     })
 
     it('cannot access service key for non-existent EINs', async function () {
-      await instances.Resolver.isKeyFor(services[0].address, 100)
+      await instances.Resolver.isKeyFor(services.p[0].address, 100)
         .then(() => assert.fail('key was read', 'transaction should fail'))
         .catch(error => {
           if (error.message !== defaultErrorMessage) {
