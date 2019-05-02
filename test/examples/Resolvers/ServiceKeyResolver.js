@@ -183,15 +183,76 @@ contract('Testing Service Key Resolver', function (accounts) {
     })
 
     it('service key can be removed by delegator FAIL -- timestamp', async function () {
-      
+      const timestamp = Math.round(new Date() / 1000) - (25*60*60) // 25 hours ago
+      const permissionString = web3.utils.soliditySha3(
+        '0x19', '0x00', instances.Resolver.address,
+        'I authorize the removal of a service key on my behalf.',
+        services.p[1].address,
+        timestamp
+      )
+      const permission = await sign(
+        permissionString, identity.associatedAddresses[0].address, identity.associatedAddresses[0].private
+      )
+      await instances.Resolver.removeKeyDelegated(
+        identity.associatedAddresses[0].address, services.p[1].address,
+        permission.v, permission.r, permission.s, timestamp,
+        { from: services.p[1].address }
+      )
+        .then(() => assert.fail('able to remove', 'transaction should fail'))
+        .catch(error => {
+          if (error.message !== defaultErrorMessage) {
+            assert.include(
+              error.message, 'Timestamp is not valid.', 'wrong rejection reason'
+            )
+          }
+        })
     })
 
     it('service key can be removed by delegator FAIL -- signature', async function () {
-      
+      const timestamp = Math.round(new Date() / 1000) - 1
+      const permissionString = web3.utils.soliditySha3(
+        '0x19', '0x00', instances.Resolver.address,
+        'I authorize the removal of a service key on my behalf.',
+        services.p[1].address,
+        timestamp
+      )
+      const permission = await sign(
+        permissionString, services.p[1].address, services.p[1].private
+      )
+      await instances.Resolver.removeKeyDelegated(
+        identity.associatedAddresses[0].address, services.p[1].address,
+        permission.v, permission.r, permission.s, timestamp,
+        { from: services.p[1].address }
+      )
+        .then(() => assert.fail('able to remove', 'transaction should fail'))
+        .catch(error => {
+          if (error.message !== defaultErrorMessage) {
+            assert.include(
+              error.message, 'Permission denied.', 'wrong rejection reason'
+            )
+          }
+        })
     })
 
     it('service key can be removed by delegator', async function () {
-      
+      const timestamp = Math.round(new Date() / 1000) - 1
+      const permissionString = web3.utils.soliditySha3(
+        '0x19', '0x00', instances.Resolver.address,
+        'I authorize the removal of a service key on my behalf.',
+        services.p[1].address,
+        timestamp
+      )
+      const permission = await sign(
+        permissionString, identity.associatedAddresses[0].address, identity.associatedAddresses[0].private
+      )
+      await instances.Resolver.removeKeyDelegated(
+        identity.associatedAddresses[0].address, services.p[1].address,
+        permission.v, permission.r, permission.s, timestamp,
+        { from: services.p[1].address }
+      )
+
+      const isKeyFor = await instances.Resolver.isKeyFor(services.p[1].address, identity.identity)
+      assert.isFalse(isKeyFor, 'service key was removed incorrectly.')
     })
   })
 })

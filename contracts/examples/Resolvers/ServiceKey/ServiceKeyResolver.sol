@@ -36,8 +36,8 @@ contract ServiceKeyResolver is SignatureVerifier {
     }
 
     /// @notice Allows adding a service key
-    /// @param associatedAddress An associated address to set for the new Identity (must have produced the signature).
-    /// @param key A service key to set.
+    /// @param associatedAddress An associated address to add service key for the Identity (must have produced the signature).
+    /// @param key A service key to add.
     /// @param symbol A service symbol.
     /// @param v The v component of the signature.
     /// @param r The r component of the signature.
@@ -71,22 +71,52 @@ contract ServiceKeyResolver is SignatureVerifier {
         _addKey(identityRegistry.getEIN(msg.sender), key, symbol);
     }
 
-    function _addKey(uint ein, address key, string memory symbol)
-        private isResolverFor(ein)
-    {
+    function _addKey(uint ein, address key, string memory symbol) private isResolverFor(ein) {
         keyToEin[key] = ein;
         keyToSymbol[key] = symbol;
 
         // emit KeyAdded(key, ein, symbol);
     }
 
-    function removeKey(address key)
-        external
-        isResolverFor(identityRegistry.getEIN(msg.sender))
+    /// @notice Allows removing a service key
+    /// @param associatedAddress An associated address to remove service key for the new Identity (must have produced the signature).
+    /// @param key A service key to remove.
+    /// @param v The v component of the signature.
+    /// @param r The r component of the signature.
+    /// @param s The s component of the signature.
+    /// @param timestamp The timestamp of the signature.
+    function removeKeyDelegated(
+        address associatedAddress, address key,
+        uint8 v, bytes32 r, bytes32 s, uint timestamp
+    )
+        external ensureSignatureTimeValid(timestamp)
     {
+        require(
+            isSigned(
+                associatedAddress,
+                keccak256(
+                    abi.encodePacked(
+                        byte(0x19), byte(0), address(this),
+                        "I authorize the removal of a service key on my behalf.",
+                        key, timestamp
+                    )
+                ),
+                v, r, s
+            ),
+            "Permission denied."
+        );
+
+        _removeKey(identityRegistry.getEIN(associatedAddress), key);
+    }
+
+    function removeKey(address key) external {
+        _removeKey(identityRegistry.getEIN(msg.sender), key);
+    }
+
+    function _removeKey(uint ein, address key) private isResolverFor(ein) {
         keyToEin[key] = 0;
 
-        // emit KeyRemoved(key, identityRegistry.getEIN(msg.sender));
+        // emit KeyRemoved(key, ein);
     }
 
     function isKeyFor(address key, uint ein) public view returns(bool) {
