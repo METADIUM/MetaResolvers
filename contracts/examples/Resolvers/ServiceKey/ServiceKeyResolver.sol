@@ -20,8 +20,8 @@ contract ServiceKeyResolver {
         _;
     }
 
-    function addKey(address key, string memory symbol)
-        public
+    function addKey(address key, string calldata symbol)
+        external
         isResolverFor(identityRegistry.getEIN(msg.sender))
     {
         uint ein = identityRegistry.getEIN(msg.sender);
@@ -32,7 +32,7 @@ contract ServiceKeyResolver {
     }
 
     function removeKey(address key)
-        public
+        external
         isResolverFor(identityRegistry.getEIN(msg.sender))
     {
         keyToEin[key] = 0;

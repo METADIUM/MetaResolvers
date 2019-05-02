@@ -78,7 +78,7 @@ contract('Testing Service Key Resolver', function (accounts) {
       await instances.Resolver.addKey(services.p[0].address, services.names[0], { from: identity.associatedAddresses[0].address })
 
       const isKeyFor = await instances.Resolver.isKeyFor(services.p[0].address, identity.identity)
-      assert.isTrue(isKeyFor, 'service key was set incorrectly.')
+      assert.isTrue(isKeyFor, 'service key was added incorrectly.')
 
       const symbol = await instances.Resolver.getSymbol(services.p[0].address)
       assert.equal(symbol, services.names[0], 'service symbol was set incorrectly.')
@@ -94,6 +94,29 @@ contract('Testing Service Key Resolver', function (accounts) {
             )
           }
         })
+    })
+
+    it('once added, service key can be removed', async function () {
+      await instances.Resolver.removeKey(services.p[0].address, { from: identity.associatedAddresses[0].address })
+
+      const isKeyFor = await instances.Resolver.isKeyFor(services.p[0].address, identity.identity)
+      assert.isFalse(isKeyFor, 'service key was removed incorrectly.')
+    })
+
+    it('service key can be added by delegator FAIL -- signature', async function () {
+      
+    })
+
+    it('service key can be added by delegator', async function () {
+      
+    })
+
+    it('service key can be removed by delegator FAIL -- signature', async function () {
+      
+    })
+
+    it('service key can be removed by delegator', async function () {
+      
     })
   })
 })
