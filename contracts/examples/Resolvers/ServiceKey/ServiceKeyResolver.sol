@@ -49,6 +49,8 @@ contract ServiceKeyResolver is SignatureVerifier {
     )
         external ensureSignatureTimeValid(timestamp)
     {
+        uint ein = identityRegistry.getEIN(associatedAddress);
+        require(identityRegistry.isProviderFor(ein, msg.sender), "Only provider can be delegated.");
         require(
             isSigned(
                 associatedAddress,
@@ -64,7 +66,7 @@ contract ServiceKeyResolver is SignatureVerifier {
             "Permission denied."
         );
 
-        _addKey(identityRegistry.getEIN(associatedAddress), key, symbol);
+        _addKey(ein, key, symbol);
     }
 
     function addKey(address key, string calldata symbol) external {
@@ -91,6 +93,8 @@ contract ServiceKeyResolver is SignatureVerifier {
     )
         external ensureSignatureTimeValid(timestamp)
     {
+        uint ein = identityRegistry.getEIN(associatedAddress);
+        require(identityRegistry.isProviderFor(ein, msg.sender), "Only provider can be delegated.");
         require(
             isSigned(
                 associatedAddress,
@@ -106,7 +110,7 @@ contract ServiceKeyResolver is SignatureVerifier {
             "Permission denied."
         );
 
-        _removeKey(identityRegistry.getEIN(associatedAddress), key);
+        _removeKey(ein, key);
     }
 
     function removeKey(address key) external {

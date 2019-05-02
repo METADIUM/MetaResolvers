@@ -8,7 +8,8 @@ const privateKeys = [
   '0x6bf410ff825d07346c110c5836b33ec76e7d1ee051283937392180b732aa3aff',
   '0xccc3c84f02b038a5d60d93977ab11eb57005f368b5f62dad29486edeb4566954',
   '0xccc3c84f02b038a5d60d93977ab11eb57005f368b5f62dad29486edeb4566955',
-  '0xccc3c84f02b038a5d60d93977ab11eb57005f368b5f62dad29486edeb4566956'
+  '0xccc3c84f02b038a5d60d93977ab11eb57005f368b5f62dad29486edeb4566956',
+  '0xccc3c84f02b038a5d60d93977ab11eb57005f368b5f62dad29486edeb4566957'
 ]
 
 // convenience variables
@@ -22,11 +23,11 @@ contract('Testing Service Key Resolver', function (accounts) {
   identity = {
     recoveryAddress:     accountsPrivate[0],
     associatedAddresses: accountsPrivate.slice(1, 3),
-    providers: []
+    providers:           accountsPrivate.slice(3, 4)
   }
 
   services = {
-    p: accountsPrivate.slice(3, 5),
+    p: accountsPrivate.slice(4, 6),
     names: ['sp1', 'sp2']
   }
 
@@ -42,7 +43,7 @@ contract('Testing Service Key Resolver', function (accounts) {
 
     it('Identity can be created', async function () {
       await instances.IdentityRegistry.createIdentity(
-        identity.recoveryAddress.address, [], [],
+        identity.recoveryAddress.address, [identity.providers[0].address], [],
         { from: identity.associatedAddresses[0].address }
       )
 
@@ -51,7 +52,7 @@ contract('Testing Service Key Resolver', function (accounts) {
       await verifyIdentity(identity.identity, instances.IdentityRegistry, {
         recoveryAddress:     identity.recoveryAddress.address,
         associatedAddresses: identity.associatedAddresses.map(address => address.address).slice(0, 1),
-        providers:           [],
+        providers:           identity.providers.map(address => address.address).slice(0, 1),
         resolvers:           []
       })
     })
@@ -103,6 +104,33 @@ contract('Testing Service Key Resolver', function (accounts) {
       assert.isFalse(isKeyFor, 'service key was removed incorrectly.')
     })
 
+    it('service key can be added by delegator FAIL -- provider', async function () {
+      const timestamp = Math.round(new Date() / 1000) - 1
+      const permissionString = web3.utils.soliditySha3(
+        '0x19', '0x00', instances.Resolver.address,
+        'I authorize the addition of a service key on my behalf.',
+        services.p[1].address,
+        services.names[1],
+        timestamp
+      )
+      const permission = await sign(
+        permissionString, identity.associatedAddresses[0].address, identity.associatedAddresses[0].private
+      )
+      await instances.Resolver.addKeyDelegated(
+        identity.associatedAddresses[0].address, services.p[1].address, services.names[1],
+        permission.v, permission.r, permission.s, timestamp,
+        { from: services.p[1].address }
+      )
+        .then(() => assert.fail('able to add', 'transaction should fail'))
+        .catch(error => {
+          if (error.message !== defaultErrorMessage) {
+            assert.include(
+              error.message, 'Only provider can be delegated.', 'wrong rejection reason'
+            )
+          }
+        })
+    })
+
     it('service key can be added by delegator FAIL -- timestamp', async function () {
       const timestamp = Math.round(new Date() / 1000) + 1000
       const permissionString = web3.utils.soliditySha3(
@@ -115,10 +143,10 @@ contract('Testing Service Key Resolver', function (accounts) {
       const permission = await sign(
         permissionString, identity.associatedAddresses[0].address, identity.associatedAddresses[0].private
       )
-      await instances.Resolver.addKeyDelegated.call(
+      await instances.Resolver.addKeyDelegated(
         identity.associatedAddresses[0].address, services.p[1].address, services.names[1],
         permission.v, permission.r, permission.s, timestamp,
-        { from: services.p[1].address }
+        { from: identity.providers[0].address }
       )
         .then(() => assert.fail('able to add', 'transaction should fail'))
         .catch(error => {
@@ -142,10 +170,10 @@ contract('Testing Service Key Resolver', function (accounts) {
       const permission = await sign(
         permissionString, identity.associatedAddresses[0].address, identity.associatedAddresses[0].private
       )
-      await instances.Resolver.addKeyDelegated.call(
+      await instances.Resolver.addKeyDelegated(
         identity.associatedAddresses[0].address, services.p[1].address, services.names[1],
         permission.v, permission.r, permission.s, timestamp,
-        { from: services.p[1].address }
+        { from: identity.providers[0].address }
       )
         .then(() => assert.fail('able to add', 'transaction should fail'))
         .catch(error => {
@@ -172,7 +200,7 @@ contract('Testing Service Key Resolver', function (accounts) {
       await instances.Resolver.addKeyDelegated(
         identity.associatedAddresses[0].address, services.p[1].address, services.names[1],
         permission.v, permission.r, permission.s, timestamp,
-        { from: services.p[1].address }
+        { from: identity.providers[0].address }
       )
 
       const isKeyFor = await instances.Resolver.isKeyFor(services.p[1].address, identity.identity)
@@ -180,6 +208,32 @@ contract('Testing Service Key Resolver', function (accounts) {
 
       const symbol = await instances.Resolver.getSymbol(services.p[1].address)
       assert.equal(symbol, services.names[1], 'service symbol was set incorrectly.')
+    })
+
+    it('service key can be removed by delegator FAIL -- provider', async function () {
+      const timestamp = Math.round(new Date() / 1000) - 1
+      const permissionString = web3.utils.soliditySha3(
+        '0x19', '0x00', instances.Resolver.address,
+        'I authorize the removal of a service key on my behalf.',
+        services.p[1].address,
+        timestamp
+      )
+      const permission = await sign(
+        permissionString, identity.associatedAddresses[0].address, identity.associatedAddresses[0].private
+      )
+      await instances.Resolver.removeKeyDelegated(
+        identity.associatedAddresses[0].address, services.p[1].address,
+        permission.v, permission.r, permission.s, timestamp,
+        { from: services.p[1].address }
+      )
+        .then(() => assert.fail('able to remove', 'transaction should fail'))
+        .catch(error => {
+          if (error.message !== defaultErrorMessage) {
+            assert.include(
+              error.message, 'Only provider can be delegated.', 'wrong rejection reason'
+            )
+          }
+        })
     })
 
     it('service key can be removed by delegator FAIL -- timestamp', async function () {
@@ -196,7 +250,7 @@ contract('Testing Service Key Resolver', function (accounts) {
       await instances.Resolver.removeKeyDelegated(
         identity.associatedAddresses[0].address, services.p[1].address,
         permission.v, permission.r, permission.s, timestamp,
-        { from: services.p[1].address }
+        { from: identity.providers[0].address }
       )
         .then(() => assert.fail('able to remove', 'transaction should fail'))
         .catch(error => {
@@ -222,7 +276,7 @@ contract('Testing Service Key Resolver', function (accounts) {
       await instances.Resolver.removeKeyDelegated(
         identity.associatedAddresses[0].address, services.p[1].address,
         permission.v, permission.r, permission.s, timestamp,
-        { from: services.p[1].address }
+        { from: identity.providers[0].address }
       )
         .then(() => assert.fail('able to remove', 'transaction should fail'))
         .catch(error => {
@@ -248,7 +302,7 @@ contract('Testing Service Key Resolver', function (accounts) {
       await instances.Resolver.removeKeyDelegated(
         identity.associatedAddresses[0].address, services.p[1].address,
         permission.v, permission.r, permission.s, timestamp,
-        { from: services.p[1].address }
+        { from: identity.providers[0].address }
       )
 
       const isKeyFor = await instances.Resolver.isKeyFor(services.p[1].address, identity.identity)
