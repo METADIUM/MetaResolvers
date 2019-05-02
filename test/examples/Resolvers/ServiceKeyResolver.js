@@ -26,7 +26,7 @@ contract('Testing Service Key Resolver', function (accounts) {
   }
 
   services = {
-    p: accountsPrivate.slice(4, 5),
+    p: accountsPrivate.slice(3, 5),
     names: ['sp1', 'sp2']
   }
 
@@ -103,11 +103,86 @@ contract('Testing Service Key Resolver', function (accounts) {
       assert.isFalse(isKeyFor, 'service key was removed incorrectly.')
     })
 
+    it('service key can be added by delegator FAIL -- timestamp', async function () {
+      const timestamp = Math.round(new Date() / 1000) + 1000
+      const permissionString = web3.utils.soliditySha3(
+        '0x19', '0x00', instances.Resolver.address,
+        'I authorize the addition of a service key on my behalf.',
+        services.p[1].address,
+        services.names[1],
+        timestamp
+      )
+      const permission = await sign(
+        permissionString, identity.associatedAddresses[0].address, identity.associatedAddresses[0].private
+      )
+      await instances.Resolver.addKeyDelegated.call(
+        identity.associatedAddresses[0].address, services.p[1].address, services.names[1],
+        permission.v, permission.r, permission.s, timestamp,
+        { from: services.p[1].address }
+      )
+        .then(() => assert.fail('able to add', 'transaction should fail'))
+        .catch(error => {
+          if (error.message !== defaultErrorMessage) {
+            assert.include(
+              error.message, 'Timestamp is not valid.', 'wrong rejection reason'
+            )
+          }
+        })
+    })
+
     it('service key can be added by delegator FAIL -- signature', async function () {
-      
+      const timestamp = Math.round(new Date() / 1000) - 1
+      const permissionString = web3.utils.soliditySha3(
+        '0x18', '0x00', instances.Resolver.address,
+        'Wrong message.',
+        services.p[0].address,
+        services.names[0],
+        timestamp
+      )
+      const permission = await sign(
+        permissionString, identity.associatedAddresses[0].address, identity.associatedAddresses[0].private
+      )
+      await instances.Resolver.addKeyDelegated.call(
+        identity.associatedAddresses[0].address, services.p[1].address, services.names[1],
+        permission.v, permission.r, permission.s, timestamp,
+        { from: services.p[1].address }
+      )
+        .then(() => assert.fail('able to add', 'transaction should fail'))
+        .catch(error => {
+          if (error.message !== defaultErrorMessage) {
+            assert.include(
+              error.message, 'Permission denied.', 'wrong rejection reason'
+            )
+          }
+        })
     })
 
     it('service key can be added by delegator', async function () {
+      const timestamp = Math.round(new Date() / 1000) - 1
+      const permissionString = web3.utils.soliditySha3(
+        '0x19', '0x00', instances.Resolver.address,
+        'I authorize the addition of a service key on my behalf.',
+        services.p[1].address,
+        services.names[1],
+        timestamp
+      )
+      const permission = await sign(
+        permissionString, identity.associatedAddresses[0].address, identity.associatedAddresses[0].private
+      )
+      await instances.Resolver.addKeyDelegated(
+        identity.associatedAddresses[0].address, services.p[1].address, services.names[1],
+        permission.v, permission.r, permission.s, timestamp,
+        { from: services.p[1].address }
+      )
+
+      const isKeyFor = await instances.Resolver.isKeyFor(services.p[1].address, identity.identity)
+      assert.isTrue(isKeyFor, 'service key was added incorrectly.')
+
+      const symbol = await instances.Resolver.getSymbol(services.p[1].address)
+      assert.equal(symbol, services.names[1], 'service symbol was set incorrectly.')
+    })
+
+    it('service key can be removed by delegator FAIL -- timestamp', async function () {
       
     })
 
