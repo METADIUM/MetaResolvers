@@ -319,7 +319,12 @@ contract('Testing Service Key Resolver', function (accounts) {
           { from: identity.associatedAddresses[0].address }
         )
       }))
-      const keys = await instances.Resolver.getKeys(identity.identity)
+      const bKeys = await instances.Resolver.getKeys(identity.identity)
+      assert.equal(bKeys.length, 2, 'Keys were added incorrectly.')
+
+      await instances.Resolver.removeKeys({ from: identity.associatedAddresses[0].address })
+      const aKeys = await instances.Resolver.getKeys(identity.identity)
+      assert.equal(aKeys.length, 0, 'Keys were removed incorrectly.')
     })
 
     it('service key can be removed at once by delegator FAIL -- provider', async function () {
@@ -342,7 +347,12 @@ contract('Testing Service Key Resolver', function (accounts) {
           { from: identity.associatedAddresses[0].address }
         )
       }))
-      const keys = await instances.Resolver.getKeys(identity.identity)
+      const bKeys = await instances.Resolver.getKeys(identity.identity)
+      assert.equal(bKeys.length, 2, 'Keys were added incorrectly.')
+
+      // await instances.Resolver.removeKeysDelegated({ from: identity.associatedAddresses[0].address })
+      const aKeys = await instances.Resolver.getKeys(identity.identity)
+      assert.equal(aKeys.length, 0, 'Keys were removed incorrectly.')
     })
   })
 })

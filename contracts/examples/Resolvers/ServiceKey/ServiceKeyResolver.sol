@@ -127,6 +127,15 @@ contract ServiceKeyResolver is SignatureVerifier {
         _removeKey(identityRegistry.getEIN(msg.sender), key);
     }
 
+    function removeKeys() external {
+        uint ein = identityRegistry.getEIN(msg.sender);
+        AddressSet.Set storage keys = einToKeys[ein];
+        for (uint i = 0; i < keys.length(); ++i) {
+            keyToEin[keys.members[i]] = 0;
+        }
+        delete keys.members;
+    }
+
     function _removeKey(uint ein, address key) private isResolverFor(ein) {
         keyToEin[key] = 0;
         einToKeys[ein].remove(key);
