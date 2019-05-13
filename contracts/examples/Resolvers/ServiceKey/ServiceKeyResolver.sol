@@ -86,7 +86,6 @@ contract ServiceKeyResolver is SignatureVerifier {
         keyToEin[key] = ein;
         keyToSymbol[key] = symbol;
         einToKeys[ein].insert(key);
-
         // emit KeyAdded(key, ein, symbol);
     }
 
@@ -127,11 +126,47 @@ contract ServiceKeyResolver is SignatureVerifier {
         _removeKey(identityRegistry.getEIN(msg.sender), key);
     }
 
+    /// @notice Allows removing all service keys
+    /// @param associatedAddress An associated address to remove service key for the new Identity (must have produced the signature).
+    /// @param v The v component of the signature.
+    /// @param r The r component of the signature.
+    /// @param s The s component of the signature.
+    /// @param timestamp The timestamp of the signature.
+    function removeKeysDelegated(
+        address associatedAddress,
+        uint8 v, bytes32 r, bytes32 s, uint timestamp
+    )
+        external ensureSignatureTimeValid(timestamp)
+    {
+        uint ein = identityRegistry.getEIN(associatedAddress);
+        require(identityRegistry.isProviderFor(ein, msg.sender), "Only provider can be delegated.");
+        require(
+            isSigned(
+                associatedAddress,
+                keccak256(
+                    abi.encodePacked(
+                        byte(0x19), byte(0), address(this),
+                        "I authorize the removal of all service keys on my behalf.",
+                        timestamp
+                    )
+                ),
+                v, r, s
+            ),
+            "Permission denied."
+        );
+
+        _removeKeys(ein);
+    }
+
     function removeKeys() external {
-        uint ein = identityRegistry.getEIN(msg.sender);
+        _removeKeys(identityRegistry.getEIN(msg.sender));
+    }
+
+    function _removeKeys(uint ein) private {
         AddressSet.Set storage keys = einToKeys[ein];
         for (uint i = 0; i < keys.length(); ++i) {
             keyToEin[keys.members[i]] = 0;
+            // emit KeyRemoved(keys.members[i], ein);
         }
         delete keys.members;
     }
@@ -139,7 +174,6 @@ contract ServiceKeyResolver is SignatureVerifier {
     function _removeKey(uint ein, address key) private isResolverFor(ein) {
         keyToEin[key] = 0;
         einToKeys[ein].remove(key);
-
         // emit KeyRemoved(key, ein);
     }
 
