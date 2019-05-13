@@ -1,11 +1,15 @@
 pragma solidity ^0.5.0;
 
+import "../../../AddressSet/AddressSet.sol";
 import "../../../SignatureVerifier.sol";
 import "../../../interfaces/IdentityRegistryInterface.sol";
 
 contract ServiceKeyResolver is SignatureVerifier {
+    using AddressSet for AddressSet.Set;
+
     IdentityRegistryInterface identityRegistry;
 
+    mapping(uint => AddressSet.Set) internal einToKeys;
     mapping(address => uint) internal keyToEin;
     mapping(address => string) internal keyToSymbol;
 
@@ -32,6 +36,11 @@ contract ServiceKeyResolver is SignatureVerifier {
 
     modifier isResolverFor(uint ein) {
         require(identityRegistry.isResolverFor(ein, address(this)), "The calling identity does not have this resolver set.");
+        _;
+    }
+
+    modifier identityExists(uint ein) {
+        require(identityRegistry.identityExists(ein), "The referenced identity does not exist.");
         _;
     }
 
@@ -76,7 +85,7 @@ contract ServiceKeyResolver is SignatureVerifier {
     function _addKey(uint ein, address key, string memory symbol) private isResolverFor(ein) {
         keyToEin[key] = ein;
         keyToSymbol[key] = symbol;
-
+        einToKeys[ein].insert(key);
         // emit KeyAdded(key, ein, symbol);
     }
 
@@ -117,18 +126,67 @@ contract ServiceKeyResolver is SignatureVerifier {
         _removeKey(identityRegistry.getEIN(msg.sender), key);
     }
 
+    /// @notice Allows removing all service keys
+    /// @param associatedAddress An associated address to remove service key for the new Identity (must have produced the signature).
+    /// @param v The v component of the signature.
+    /// @param r The r component of the signature.
+    /// @param s The s component of the signature.
+    /// @param timestamp The timestamp of the signature.
+    function removeKeysDelegated(
+        address associatedAddress,
+        uint8 v, bytes32 r, bytes32 s, uint timestamp
+    )
+        external ensureSignatureTimeValid(timestamp)
+    {
+        uint ein = identityRegistry.getEIN(associatedAddress);
+        require(identityRegistry.isProviderFor(ein, msg.sender), "Only provider can be delegated.");
+        require(
+            isSigned(
+                associatedAddress,
+                keccak256(
+                    abi.encodePacked(
+                        byte(0x19), byte(0), address(this),
+                        "I authorize the removal of all service keys on my behalf.",
+                        timestamp
+                    )
+                ),
+                v, r, s
+            ),
+            "Permission denied."
+        );
+
+        _removeKeys(ein);
+    }
+
+    function removeKeys() external {
+        _removeKeys(identityRegistry.getEIN(msg.sender));
+    }
+
+    function _removeKeys(uint ein) private {
+        AddressSet.Set storage keys = einToKeys[ein];
+        for (uint i = 0; i < keys.length(); ++i) {
+            keyToEin[keys.members[i]] = 0;
+            // emit KeyRemoved(keys.members[i], ein);
+        }
+        delete keys.members;
+    }
+
     function _removeKey(uint ein, address key) private isResolverFor(ein) {
         keyToEin[key] = 0;
-
+        einToKeys[ein].remove(key);
         // emit KeyRemoved(key, ein);
     }
 
-    function isKeyFor(address key, uint ein) public view returns(bool) {
-        require(identityRegistry.identityExists(ein), "The referenced identity does not exist.");
+    function isKeyFor(address key, uint ein) public view identityExists(ein) returns(bool) {
         return keyToEin[key] == ein;
     }
 
     function getSymbol(address key) public view returns(string memory) {
         return keyToSymbol[key];
+    }
+
+    function getKeys(uint ein) public view identityExists(ein) returns(address[] memory) {
+        AddressSet.Set storage keys = einToKeys[ein];
+        return keys.members;
     }
 }

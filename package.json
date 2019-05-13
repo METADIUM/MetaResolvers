@@ -37,6 +37,7 @@
     "eslint-plugin-promise": "^4.0.1",
     "eslint-plugin-standard": "^4.0.0",
     "solidity-coverage": "^0.5.11",
-    "solium": "^1.1.8"
+    "solium": "^1.1.8",
+    "underscore": "^1.9.1"
   }
 }
