@@ -1,11 +1,15 @@
 pragma solidity ^0.5.0;
 
+import "../../../AddressSet/AddressSet.sol";
 import "../../../SignatureVerifier.sol";
 import "../../../interfaces/IdentityRegistryInterface.sol";
 
 contract ServiceKeyResolver is SignatureVerifier {
+    using AddressSet for AddressSet.Set;
+
     IdentityRegistryInterface identityRegistry;
 
+    mapping(uint => AddressSet.Set) internal einToKeys;
     mapping(address => uint) internal keyToEin;
     mapping(address => string) internal keyToSymbol;
 
@@ -32,6 +36,11 @@ contract ServiceKeyResolver is SignatureVerifier {
 
     modifier isResolverFor(uint ein) {
         require(identityRegistry.isResolverFor(ein, address(this)), "The calling identity does not have this resolver set.");
+        _;
+    }
+
+    modifier identityExists(uint ein) {
+        require(identityRegistry.identityExists(ein), "The referenced identity does not exist.");
         _;
     }
 
@@ -76,6 +85,7 @@ contract ServiceKeyResolver is SignatureVerifier {
     function _addKey(uint ein, address key, string memory symbol) private isResolverFor(ein) {
         keyToEin[key] = ein;
         keyToSymbol[key] = symbol;
+        einToKeys[ein].insert(key);
 
         // emit KeyAdded(key, ein, symbol);
     }
@@ -119,16 +129,21 @@ contract ServiceKeyResolver is SignatureVerifier {
 
     function _removeKey(uint ein, address key) private isResolverFor(ein) {
         keyToEin[key] = 0;
+        einToKeys[ein].remove(key);
 
         // emit KeyRemoved(key, ein);
     }
 
-    function isKeyFor(address key, uint ein) public view returns(bool) {
-        require(identityRegistry.identityExists(ein), "The referenced identity does not exist.");
+    function isKeyFor(address key, uint ein) public view identityExists(ein) returns(bool) {
         return keyToEin[key] == ein;
     }
 
     function getSymbol(address key) public view returns(string memory) {
         return keyToSymbol[key];
+    }
+
+    function getKeys(uint ein) public view identityExists(ein) returns(address[] memory) {
+        AddressSet.Set storage keys = einToKeys[ein];
+        return keys.members;
     }
 }

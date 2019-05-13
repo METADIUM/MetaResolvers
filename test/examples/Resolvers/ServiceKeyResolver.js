@@ -1,3 +1,5 @@
+var _ = require('underscore')
+
 const { sign, verifyIdentity, defaultErrorMessage } = require('../../common')
 
 const IdentityRegistry = artifacts.require('./IdentityRegistry.sol')
@@ -60,7 +62,7 @@ contract('Testing Service Key Resolver', function (accounts) {
 
   describe('Testing Resolver', function () {
     it('resolver cannot be used when not set', async function () {
-      await instances.Resolver.addKey(services.p[0].address, 'sp1', { from: identity.associatedAddresses[0].address })
+      await instances.Resolver.addKey(services.p[0].address, services.names[0], { from: identity.associatedAddresses[0].address })
         .then(() => assert.fail('service key was added', 'transaction should fail'))
         .catch(error => assert.include(
           error.message, 'The calling identity does not have this resolver set.', 'wrong rejection reason'
@@ -307,6 +309,40 @@ contract('Testing Service Key Resolver', function (accounts) {
 
       const isKeyFor = await instances.Resolver.isKeyFor(services.p[1].address, identity.identity)
       assert.isFalse(isKeyFor, 'service key was removed incorrectly.')
+    })
+
+    it('service key can be removed at once', async function () {
+      await Promise.all(_.each(_.range(2), async (idx) => {
+        await instances.Resolver.addKey(
+          services.p[idx].address,
+          services.names[idx],
+          { from: identity.associatedAddresses[0].address }
+        )
+      }))
+      const keys = await instances.Resolver.getKeys(identity.identity)
+    })
+
+    it('service key can be removed at once by delegator FAIL -- provider', async function () {
+      const keys = await instances.Resolver.getKeys(identity.identity)
+    })
+
+    it('service key can be removed at once by delegator FAIL -- timestamp', async function () {
+      const keys = await instances.Resolver.getKeys(identity.identity)
+    })
+
+    it('service key can be removed at once by delegator FAIL -- signature', async function () {
+      const keys = await instances.Resolver.getKeys(identity.identity)
+    })
+
+    it('service key can be removed at once by delegator', async function () {
+      await Promise.all(_.each(_.range(2), async (idx) => {
+        await instances.Resolver.addKey(
+          services.p[idx].address,
+          services.names[idx],
+          { from: identity.associatedAddresses[0].address }
+        )
+      }))
+      const keys = await instances.Resolver.getKeys(identity.identity)
     })
   })
 })
