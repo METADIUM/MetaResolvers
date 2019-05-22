@@ -61,7 +61,7 @@ contract('Testing Service Key Resolver', function (accounts) {
   })
 
   describe('Testing Resolver', function () {
-    it('resolver cannot be used when not set', async function () {
+    it('resolver cannot be used before set', async function () {
       await instances.Resolver.addKey(services.p[0].address, services.names[0], { from: identity.associatedAddresses[0].address })
         .then(() => assert.fail('service key was added', 'transaction should fail'))
         .catch(error => assert.include(
@@ -85,6 +85,14 @@ contract('Testing Service Key Resolver', function (accounts) {
 
       const symbol = await instances.Resolver.getSymbol(services.p[0].address)
       assert.equal(symbol, services.names[0], 'service symbol was set incorrectly.')
+    })
+
+    it('once added, same service key cannot be added again. even with other EIN', async function () {
+      await instances.Resolver.addKey(services.p[0].address, services.names[0], { from: identity.associatedAddresses[0].address })
+        .then(() => assert.fail('service key was added', 'transaction should fail'))
+        .catch(error => assert.include(
+          error.message, 'Key was already added by someone.', 'wrong rejection reason'
+        ))
     })
 
     it('cannot access service key for non-existent EINs', async function () {
