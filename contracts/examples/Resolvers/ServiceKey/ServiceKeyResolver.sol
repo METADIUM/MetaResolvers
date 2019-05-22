@@ -83,10 +83,11 @@ contract ServiceKeyResolver is SignatureVerifier {
     }
 
     function _addKey(uint ein, address key, string memory symbol) private isResolverFor(ein) {
+        require(keyToEin[key] == 0, "Key was already added by someone.");
         keyToEin[key] = ein;
         keyToSymbol[key] = symbol;
         einToKeys[ein].insert(key);
-        // emit KeyAdded(key, ein, symbol);
+        emit KeyAdded(key, ein, symbol);
     }
 
     /// @notice Allows removing a service key
@@ -166,7 +167,7 @@ contract ServiceKeyResolver is SignatureVerifier {
         AddressSet.Set storage keys = einToKeys[ein];
         for (uint i = 0; i < keys.length(); ++i) {
             keyToEin[keys.members[i]] = 0;
-            // emit KeyRemoved(keys.members[i], ein);
+            emit KeyRemoved(keys.members[i], ein);
         }
         delete keys.members;
     }
@@ -174,7 +175,7 @@ contract ServiceKeyResolver is SignatureVerifier {
     function _removeKey(uint ein, address key) private isResolverFor(ein) {
         keyToEin[key] = 0;
         einToKeys[ein].remove(key);
-        // emit KeyRemoved(key, ein);
+        emit KeyRemoved(key, ein);
     }
 
     function isKeyFor(address key, uint ein) public view identityExists(ein) returns(bool) {
