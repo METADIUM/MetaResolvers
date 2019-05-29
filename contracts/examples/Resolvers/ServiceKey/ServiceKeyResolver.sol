@@ -7,6 +7,8 @@ import "../../../interfaces/IdentityRegistryInterface.sol";
 contract ServiceKeyResolver is SignatureVerifier {
     using AddressSet for AddressSet.Set;
 
+    string public constant NAME = "ServiceKeyResolver";
+
     IdentityRegistryInterface identityRegistry;
 
     mapping(uint => AddressSet.Set) internal einToKeys;
