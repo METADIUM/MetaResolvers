@@ -466,7 +466,7 @@ contract IdentityRegistry is SignatureVerifier {
     /// @notice Allows an associated address to remove resolvers from its Identity.
     /// @param resolvers A list of resolvers.
     function removeResolvers(address[] memory resolvers) public {
-        removeResolvers(getEIN(msg.sender), resolvers, true);
+        removeResolvers(getEIN(msg.sender), resolvers, false);
     }
 
     /// @notice Allows providers to remove resolvers from an Identity.
