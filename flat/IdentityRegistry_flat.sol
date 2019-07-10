@@ -1,7 +1,88 @@
 pragma solidity ^0.5.0;
 
-import "./SignatureVerifier.sol";
-import "./AddressSet/AddressSet.sol";
+/// @title Provides helper functions to determine the validity of passed signatures.
+/// @author Noah Zinsmeister
+/// @dev Supports both prefixed and un-prefixed signatures.
+contract SignatureVerifier {
+    /// @notice Determines whether the passed signature of `messageHash` was made by the private key of `_address`.
+    /// @param _address The address that may or may not have signed the passed messageHash.
+    /// @param messageHash The messageHash that may or may not have been signed.
+    /// @param v The v component of the signature.
+    /// @param r The r component of the signature.
+    /// @param s The s component of the signature.
+    /// @return true if the signature can be verified, false otherwise.
+    function isSigned(address _address, bytes32 messageHash, uint8 v, bytes32 r, bytes32 s) public pure returns (bool) {
+        return _isSigned(_address, messageHash, v, r, s) || _isSignedPrefixed(_address, messageHash, v, r, s);
+    }
+
+    /// @dev Checks unprefixed signatures.
+    function _isSigned(address _address, bytes32 messageHash, uint8 v, bytes32 r, bytes32 s)
+        internal pure returns (bool)
+    {
+        return ecrecover(messageHash, v, r, s) == _address;
+    }
+
+    /// @dev Checks prefixed signatures.
+    function _isSignedPrefixed(address _address, bytes32 messageHash, uint8 v, bytes32 r, bytes32 s)
+        internal pure returns (bool)
+    {
+        bytes memory prefix = "\x19Ethereum Signed Message:\n32";
+        return _isSigned(_address, keccak256(abi.encodePacked(prefix, messageHash)), v, r, s);
+    }
+}
+
+/// @title An implementation of the set data structure for addresses.
+/// @author Noah Zinsmeister
+/// @dev O(1) insertion, removal, contains, and length functions.
+library AddressSet {
+    struct Set {
+        address[] members;
+        mapping(address => uint) memberIndices;
+    }
+
+    /// @dev Inserts an element into a set. If the element already exists in the set, the function is a no-op.
+    /// @param self The set to insert into.
+    /// @param other The element to insert.
+    function insert(Set storage self, address other) internal {
+        if (!contains(self, other)) {
+            self.memberIndices[other] = self.members.push(other);
+        }
+    }
+
+    /// @dev Removes an element from a set. If the element does not exist in the set, the function is a no-op.
+    /// @param self The set to remove from.
+    /// @param other The element to remove.
+    function remove(Set storage self, address other) internal {
+        if (contains(self, other)) {
+            // replace other with the last element
+            self.members[self.memberIndices[other] - 1] = self.members[length(self) - 1];
+            // reflect this change in the indices
+            self.memberIndices[self.members[self.memberIndices[other] - 1]] = self.memberIndices[other];
+            delete self.memberIndices[other];
+            // remove the last element
+            self.members.pop();
+        }
+    }
+
+    /// @dev Checks set membership.
+    /// @param self The set to check membership in.
+    /// @param other The element to check membership of.
+    /// @return true if the element is in the set, false otherwise.
+    function contains(Set storage self, address other) internal view returns (bool) {
+        return ( // solium-disable-line operator-whitespace
+            self.memberIndices[other] > 0 && 
+            self.members.length >= self.memberIndices[other] && 
+            self.members[self.memberIndices[other] - 1] == other
+        );
+    }
+
+    /// @dev Returns the number of elements in a set.
+    /// @param self The set to check the length of.
+    /// @return The number of elements in the set.
+    function length(Set storage self) internal view returns (uint) {
+        return self.members.length;
+    }
+}
 
 /// @title The ERC-1484 Identity Registry.
 /// @author Noah Zinsmeister
