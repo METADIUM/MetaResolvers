@@ -16,7 +16,6 @@ const privateKeys = [
   '0xf65450adda73b32e056ed24246d8d370e49fc88b427f96f37bbf23f6b132b93b',
   '0x34a1f9ed996709f629d712d5b267d23f37be82bf8003a023264f71005f6486e6',
   '0x1711e5c516428d875c14dac234f36bbf3b4622aeac00566483a8087ed5a97297',
-  '0x01b149603ca8f537bbb4e45d22e77df9054e50d826bb5f0a34e9ce460432b596',
   '0xce5e2ea9c47caba88b3421d75023bd8c359e2aaf897e519a10a256d931028ca1'
 ]
 
@@ -28,7 +27,6 @@ let identity
 function privateToPublic( privateKey){
   const pubKeyBuffer = ethUtil.privateToPublic(privateKey)
   const pubKeyHex = ethUtil.bufferToHex(pubKeyBuffer)
-  console.log(privateKey , pubKeyHex)
   return pubKeyHex;
 }
 
